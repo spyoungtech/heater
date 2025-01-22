@@ -3,19 +3,17 @@ name: Build Rust on Multiple Platforms
 on: [push, pull_request]
 
 jobs:
-  build:
+  build-linux:
+    name: Build Linux Binaries
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         target:
-          - x86_64-unknown-linux-gnu  # Linux x86_64
-          - aarch64-unknown-linux-gnu # Linux aarch64
-          - x86_64-apple-darwin       # macOS x86_64
-          - aarch64-apple-darwin      # macOS aarch64
-          - x86_64-pc-windows-msvc    # Windows x86_64
+          - x86_64-unknown-linux-gnu
+          - aarch64-unknown-linux-gnu
     steps:
-      - name: Check out the repository
+      - name: Check out repository
         uses: actions/checkout@v3
 
       - name: Install Cross
@@ -28,5 +26,49 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.target }}-release
+          name: linux-${{ matrix.target }}-release
+          path: target/${{ matrix.target }}/release/
+
+  build-windows:
+    name: Build Windows Binaries
+    runs-on: windows-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+
+      - name: Install Rust (MSVC)
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build
+        run: cargo build --release --target x86_64-pc-windows-msvc
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: windows-x86_64-pc-windows-msvc-release
+          path: target/x86_64-pc-windows-msvc/release/
+
+  build-macos:
+    name: Build macOS Binaries
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - x86_64-apple-darwin
+          - aarch64-apple-darwin
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build macOS
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: macos-${{ matrix.target }}-release
           path: target/${{ matrix.target }}/release/
