@@ -26,7 +26,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
-          name: linux-${{ matrix.target }}-release
+          name: binary-linux-${{ matrix.target }}-release
           path: target/${{ matrix.target }}/release/
 
   build-windows:
@@ -45,7 +45,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
-          name: windows-x86_64-pc-windows-msvc-release
+          name: binary-windows-x86_64-pc-windows-msvc-release
           path: target/x86_64-pc-windows-msvc/release/
 
   build-macos:
@@ -74,5 +74,29 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
-          name: macos-${{ matrix.target }}-release
+          name: binary-macos-${{ matrix.target }}-release
           path: target/${{ matrix.target }}/release/
+
+  release:
+    needs: [test-builds-arch, test-builds-os, build-sdist]
+    if: success() && startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: write
+    steps:
+
+      - name: get dist artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: binary-*
+          merge-multiple: true
+          path: target
+
+      - name: Release GitHub
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            target/**/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
