@@ -23,11 +23,18 @@ jobs:
         run: |
           cross build --release --target ${{ matrix.target }}
 
+      - name: move artifact
+        run: |
+          mkdir dist
+          mkdir dist/${{ matrix.target }}
+          mv target/${{ matrix.target }}/release/heater dist/${{ matrix.target }}/heater
+
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: binary-linux-${{ matrix.target }}-release
-          path: target/${{ matrix.target }}/release/
+          path: dist/
+
 
   build-windows:
     name: Build Windows Binaries
@@ -42,11 +49,18 @@ jobs:
       - name: Build
         run: cargo build --release --target x86_64-pc-windows-msvc
 
+      - name: move artifact
+        run: |
+          mkdir dist
+          mkdir dist/x86_64-pc-windows-msvc
+          mv target/x86_64-pc-windows-msvc/release/heater.exe dist/x86_64-pc-windows-msvc/heater.exe
+          
+
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: binary-windows-x86_64-pc-windows-msvc-release
-          path: target/x86_64-pc-windows-msvc/release/
+          path: dist/
 
   build-macos:
     name: Build macOS Binaries
@@ -71,11 +85,17 @@ jobs:
       - name: Build macOS
         run: cargo build --release --target ${{ matrix.target }}
 
+      - name: move artifact
+        run: |
+          mkdir dist
+          mkdir dist/${{ matrix.target }}
+          mv target/${{ matrix.target }}/release/heater dist/${{ matrix.target }}/heater
+
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: binary-macos-${{ matrix.target }}-release
-          path: target/${{ matrix.target }}/release/
+          path: dist/
 
   release:
     needs: [build-macos, build-windows, build-linux]
@@ -89,14 +109,22 @@ jobs:
       - name: get dist artifacts
         uses: actions/download-artifact@v4
         with:
-          pattern: binary-*
           merge-multiple: true
-          path: target
+          path: dist
+      - name: zip_artifacts
+        run: |
+          mkdir out
+          for dirname in dist/*; do
+            echo "checking $dirname"
+            foldername=$(basename "$dirname")
+            echo "zipping $dirname to out/${foldername}.zip"
+            zip -j "out/${foldername}.zip" "$dirname"/*
+          done
 
       - name: Release GitHub
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            target/**/*
+            out/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
