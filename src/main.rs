@@ -15,13 +15,13 @@ fn burn_cpu_until(target_time: SystemTime) {
 
 #[derive(Parser)]
 struct Cli {
-    #[arg(short, long, help = "the duration, in seconds, to run the heater. If a negative value is provided, runs forever")]
+    #[arg(short, long, help = "The duration, in seconds, to run the heater. If a negative value is provided, runs forever")]
     duration: i32,
 
-    #[arg(short, long, help = "the number of threads per core to spawn", default_value = "2")]
+    #[arg(short, long, help = "The number of threads per core to spawn", default_value = "2")]
     threads_per_core: u32,
 
-    #[arg(short, long, help = "the number of cores to occupy. If unspecified, uses all cores. If the number specified is higher than the number of CPU cores available, all cores will be used.")]
+    #[arg(short, long, help = "The number of cores to occupy. If unspecified, uses all cores. If the number specified is higher than the number of CPU cores available, all cores will be used.")]
     cores: Option<u32>
 }
 
