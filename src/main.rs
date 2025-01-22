@@ -15,8 +15,14 @@ fn burn_cpu_until(target_time: SystemTime) {
 
 #[derive(Parser)]
 struct Cli {
-    #[arg(short, long, help = "the duration, in seconds, to run the heater")]
-    duration: u64
+    #[arg(short, long, help = "The duration, in seconds, to run the heater. If a negative value is provided, runs forever")]
+    duration: i32,
+
+    #[arg(short, long, help = "The number of threads per core to spawn", default_value = "2")]
+    threads_per_core: u32,
+
+    #[arg(short, long, help = "The number of cores to occupy. If unspecified, uses all cores. If the number specified is higher than the number of CPU cores available, all cores will be used.")]
+    cores: Option<u32>
 }
 
 
@@ -28,15 +34,40 @@ fn main() {
     let cores = core_affinity::get_core_ids().expect("Failed to get core IDs");
     let mut handles = Vec::new();
 
+    let mut duration_input: i32 = args.duration;
+    if duration_input.is_negative() {
+        duration_input = i32::MAX;
+    }
+    if duration_input == 0 {
+        return // TODO: warn?
+    }
+    assert!(duration_input.is_positive());
+    let duration = Duration::from_secs(duration_input as u64);
+    let threads_per_core: u32 = args.threads_per_core;
+    if threads_per_core == 0 {
+        return // TODO: warn?
+    }
+    let target_time = SystemTime::now() + duration;
+    let num_cores = match args.cores {
+        Some(core_arg) => {
+            core_arg as usize
+        },
+        None => {
+            usize::MAX
+        }
+    };
+    if num_cores == 0 {
+        return // TODO: warn?
+    }
 
     for (core_index, core_id) in cores.into_iter().enumerate() {
-        // For each core, we'll spawn 2 threads pinned to that same core
-        for sub_thread_id in 0..2 {
+        if core_index + 1 > num_cores {
+            break
+        }
+        for _ in 0..threads_per_core {
             let handle = thread::spawn(move || {
                 // Pin this thread to the specified core
                 core_affinity::set_for_current(core_id);
-                let duration = Duration::from_secs(args.duration);
-                let target_time = SystemTime::now() + duration;
                 burn_cpu_until(target_time);
             });
 
