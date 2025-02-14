@@ -4,15 +4,17 @@ Simple utility designed to max out CPU utilization for a specified duration.
 
 
 ```
-Usage: heater.exe [OPTIONS] --duration <DURATION>
+Usage: heater [OPTIONS] --duration <DURATION>
 
 Options:
   -d, --duration <DURATION>
-          the duration, in seconds, to run the heater. If a negative value is provided, runs forever
+          The duration, in seconds, to run the heater. If a negative value is provided, runs forever
   -t, --threads-per-core <THREADS_PER_CORE>
-          the number of threads per core to spawn [default: 2]
+          The number of threads per core to spawn [default: 2]
   -c, --cores <CORES>
-          the number of cores to occupy. If unspecified, uses all cores. If the number specified is higher than the number of CPU cores available, all cores will be used.
+          The number of cores to occupy. If unspecified, uses all cores. If the number specified is higher than the number of CPU cores available, all cores will be used.
+  -q, --quiet
+          Suppress output messages and warnings
   -h, --help
           Print help
 ```
