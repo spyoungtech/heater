@@ -2,6 +2,7 @@ use std::thread;
 use std::time::{Duration, SystemTime};
 use core_affinity;
 use clap::Parser;
+
 fn burn_cpu_until(target_time: SystemTime) {
     // Busy-loop until we reach the target time
     while SystemTime::now() < target_time {
@@ -22,7 +23,10 @@ struct Cli {
     threads_per_core: u32,
 
     #[arg(short, long, help = "The number of cores to occupy. If unspecified, uses all cores. If the number specified is higher than the number of CPU cores available, all cores will be used.")]
-    cores: Option<u32>
+    cores: Option<u32>,
+
+    #[arg(short, long, help = "Suppress output messages and warnings", default_value_t = false )]
+    quiet: bool,
 }
 
 
@@ -39,13 +43,19 @@ fn main() {
         duration_input = i32::MAX;
     }
     if duration_input == 0 {
-        return // TODO: warn?
+        if !args.quiet {
+            eprintln!("WARN: duration specified is zero, exiting immediately");
+        }
+        return
     }
     assert!(duration_input.is_positive());
     let duration = Duration::from_secs(duration_input as u64);
     let threads_per_core: u32 = args.threads_per_core;
     if threads_per_core == 0 {
-        return // TODO: warn?
+        if !args.quiet {
+            eprintln!("WARN: num threads specified is zero, exiting immediately");
+        }
+        return
     }
     let target_time = SystemTime::now() + duration;
     let num_cores = match args.cores {
@@ -57,7 +67,10 @@ fn main() {
         }
     };
     if num_cores == 0 {
-        return // TODO: warn?
+        if !args.quiet {
+            eprintln!("WARN: num cores specified is zero, exiting immediately");
+        }
+        return
     }
 
     for (core_index, core_id) in cores.into_iter().enumerate() {
@@ -65,6 +78,9 @@ fn main() {
             break
         }
         for _ in 0..threads_per_core {
+            if !args.quiet {
+                println!("Starting thread on core {core_index}")
+            }
             let handle = thread::spawn(move || {
                 // Pin this thread to the specified core
                 core_affinity::set_for_current(core_id);
@@ -78,4 +94,5 @@ fn main() {
     for handle in handles {
         handle.join().unwrap();
     }
+    println!("Done!");
 }
